@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, useMotionValue, useTransform as uT } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValue } from "framer-motion";
 import heroBg from "@/assets/images/hero-bg.png";
 
 export default function Hero() {

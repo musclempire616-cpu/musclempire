@@ -244,6 +244,7 @@ export default function AdminCustomer({ params }: { params: { id: string } }) {
     const histFoodW = 52;
     const dietTimeW = 22;
     const suggColW = usableW - histTimeW - histFoodW - dietTimeW;
+    const mealColW = 40; // label column width for the "Additional" section
 
     doc.setFillColor(50, 30, 5);
     doc.rect(margin, y, usableW, 7, "F");
