@@ -68,11 +68,18 @@ function pushToSheets(offers: Offer[]): void {
     ...o,
     image: o.image?.startsWith("data:") ? "" : (o.image || ""),
   }));
-  fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "saveOffers", token: T, data: JSON.stringify(stripped) }),
+  const dataStr = JSON.stringify(stripped);
+  const qs = new URLSearchParams({
+    action: "saveOffers",
+    token: T,
+    data: dataStr,
+    _t: String(Date.now())
+  }).toString();
+
+  fetch(`${APPS_SCRIPT_URL}?${qs}`, {
+    method: "GET",
+    redirect: "follow",
+    cache: "no-store"
   }).catch(() => {});
 }
 

@@ -82,12 +82,9 @@ async function fetchImagesFromSheets(retry = 1): Promise<GalleryImage[] | null> 
 }
 
 function saveImagesToSheets(images: GalleryImage[]): void {
-  fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "saveImages", token: T, data: JSON.stringify(dedupeImages(images)) }),
-  }).catch(() => {});
+  const dataStr = JSON.stringify(dedupeImages(images));
+  const qs = new URLSearchParams({ action: "saveImages", token: T, data: dataStr, _t: String(Date.now()) }).toString();
+  fetch(`${APPS_SCRIPT_URL}?${qs}`, { method: "GET", redirect: "follow", cache: "no-store" }).catch(() => {});
 }
 
 async function fetchVideosFromSheets(retry = 1): Promise<GalleryVideo[] | null> {
@@ -107,12 +104,9 @@ async function fetchVideosFromSheets(retry = 1): Promise<GalleryVideo[] | null> 
 }
 
 function saveVideosToSheets(videos: GalleryVideo[]): void {
-  fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "saveVideos", token: T, data: JSON.stringify(dedupeVideos(videos)) }),
-  }).catch(() => {});
+  const dataStr = JSON.stringify(dedupeVideos(videos));
+  const qs = new URLSearchParams({ action: "saveVideos", token: T, data: dataStr, _t: String(Date.now()) }).toString();
+  fetch(`${APPS_SCRIPT_URL}?${qs}`, { method: "GET", redirect: "follow", cache: "no-store" }).catch(() => {});
 }
 
 // ── Public API — Images ──────────────────────────────────────────────────────

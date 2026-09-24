@@ -85,11 +85,18 @@ export async function pullFromSheets(retry = 1): Promise<Coupon[]> {
 }
 
 function pushToSheets(coupons: Coupon[]): void {
-  fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "saveCoupons", token: T, data: JSON.stringify(coupons) }),
+  const dataStr = JSON.stringify(coupons);
+  const qs = new URLSearchParams({
+    action: "saveCoupons",
+    token: T,
+    data: dataStr,
+    _t: String(Date.now())
+  }).toString();
+
+  fetch(`${APPS_SCRIPT_URL}?${qs}`, {
+    method: "GET",
+    redirect: "follow",
+    cache: "no-store"
   }).catch(() => {});
 }
 
