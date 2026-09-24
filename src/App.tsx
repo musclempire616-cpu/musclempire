@@ -29,12 +29,14 @@ const queryClient = new QueryClient();
 // Clear old localStorage cache keys on every load — but NOT coupons/offers data
 if (typeof localStorage !== "undefined") {
   const keysToRemove = [
+    "me_offers_v2",      // always clear — Sheets is source of truth for offers
+    "me_offers_ts",
     "me_gallery_images", "me_gallery_images_ts",
     "me_gallery_images_v2",
     "me_gallery_videos", "me_gallery_videos_ts",
     "me_gallery_videos_v2",
     "me_assessments_ts",
-    // DO NOT clear me_offers_v2 or me_coupons_v2 — this would delete all offers and coupons
+    // DO NOT clear me_coupons_v2 — this would delete all coupons
   ];
   keysToRemove.forEach(k => localStorage.removeItem(k));
 }
