@@ -96,7 +96,7 @@ export default function AdminOffers() {
     setSyncing(true);
     Promise.all([
       pullOffersFromSheets().then(() => setOffers(getOffers())),
-      pullFromSheets().then((freshCoupons) => setCoupons(freshCoupons.length > 0 ? freshCoupons : getCoupons())),
+      pullFromSheets().then((freshCoupons) => setCoupons(freshCoupons)),
     ]).finally(() => setSyncing(false));
 
     return () => {

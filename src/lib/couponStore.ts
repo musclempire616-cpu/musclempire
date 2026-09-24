@@ -3,6 +3,7 @@ import { APPS_SCRIPT_URL } from "@/lib/sheets";
 const T = ["ZujXfS4o6t","pRWL2vQmAT","JbEFBaVKCs","1O7UGPqDyk"].join("");
 const CACHE_KEY = "me_coupons_v2";
 const CACHE_TS_KEY = "me_coupons_ts";
+const LAST_EDIT_KEY = "me_coupons_last_edit_ts";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export interface Coupon {
@@ -14,15 +15,37 @@ export interface Coupon {
   description?: string;
 }
 
+const DEFAULT_COUPONS: Coupon[] = [
+  { id: "c_default_1", code: "MUSCLEMPIRE25", discount: 25, plans: [], enabled: true, description: "New Member Special 25% OFF" },
+  { id: "c_default_2", code: "CROSSFIT20", discount: 20, plans: [], enabled: true, description: "CrossFit Power Pass 20% OFF" },
+  { id: "c_default_3", code: "FEMALEFIT", discount: 20, plans: [], enabled: true, description: "Women's Transformation Deal 20% OFF" },
+  { id: "c_default_4", code: "WELCOME10", discount: 10, plans: [], enabled: true, description: "Welcome Discount 10% OFF" },
+];
+
 // ── localStorage (instant read/write) ───────────────────────────────────────
 
 function readCache(): Coupon[] {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || "[]"); } catch { return []; }
+  try {
+    const item = localStorage.getItem(CACHE_KEY);
+    if (item === null) return DEFAULT_COUPONS;
+    return JSON.parse(item);
+  } catch {
+    return DEFAULT_COUPONS;
+  }
 }
 
 function writeCache(coupons: Coupon[]): void {
   localStorage.setItem(CACHE_KEY, JSON.stringify(coupons));
   localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+}
+
+function recordLocalEdit(): void {
+  localStorage.setItem(LAST_EDIT_KEY, String(Date.now()));
+}
+
+function isRecentLocalEdit(): boolean {
+  const ts = parseInt(localStorage.getItem(LAST_EDIT_KEY) || "0", 10);
+  return Date.now() - ts < 15_000; // Skip sheet overwrite for 15s after user edit
 }
 
 function isCacheStale(): boolean {
@@ -33,32 +56,32 @@ function isCacheStale(): boolean {
 // ── Sheets (background sync only) ───────────────────────────────────────────
 
 export async function pullFromSheets(retry = 1): Promise<Coupon[]> {
+  if (isRecentLocalEdit()) {
+    return readCache();
+  }
+
   for (let attempt = 0; attempt <= retry; attempt++) {
     try {
-      localStorage.removeItem(CACHE_TS_KEY);
       const res = await fetch(`${APPS_SCRIPT_URL}?action=getCoupons&token=${T}&_t=${Date.now()}`, {
         redirect: "follow",
         cache: "no-store",
       });
       const text = await res.text();
       const json = JSON.parse(text);
-      if (Array.isArray(json?.coupons) && json.coupons.length > 0) {
-        writeCache(json.coupons as Coupon[]);
-        window.dispatchEvent(new CustomEvent("couponsUpdated"));
-        return json.coupons as Coupon[];
+      if (Array.isArray(json?.coupons)) {
+        if (!isRecentLocalEdit()) {
+          const coupons = json.coupons as Coupon[];
+          writeCache(coupons);
+          window.dispatchEvent(new CustomEvent("couponsUpdated"));
+          return coupons;
+        }
       }
     } catch (e) {
       console.warn("[couponStore] pullFromSheets failed attempt:", attempt, e);
       if (attempt < retry) await new Promise(r => setTimeout(r, 800));
     }
   }
-  const current = readCache();
-  if (current.length === 0) {
-    writeCache(DEFAULT_COUPONS);
-    window.dispatchEvent(new CustomEvent("couponsUpdated"));
-    return DEFAULT_COUPONS;
-  }
-  return current;
+  return readCache();
 }
 
 function pushToSheets(coupons: Coupon[]): void {
@@ -72,22 +95,12 @@ function pushToSheets(coupons: Coupon[]): void {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-const DEFAULT_COUPONS: Coupon[] = [
-  { id: "c_default_1", code: "MUSCLEMPIRE25", discount: 25, plans: [], enabled: true, description: "New Member Special 25% OFF" },
-  { id: "c_default_2", code: "CROSSFIT20", discount: 20, plans: [], enabled: true, description: "CrossFit Power Pass 20% OFF" },
-  { id: "c_default_3", code: "FEMALEFIT", discount: 20, plans: [], enabled: true, description: "Women's Transformation Deal 20% OFF" },
-  { id: "c_default_4", code: "WELCOME10", discount: 10, plans: [], enabled: true, description: "Welcome Discount 10% OFF" },
-];
-
 export function getCoupons(): Coupon[] {
-  const cached = readCache();
-  if (cached.length === 0 || isCacheStale()) {
-    pullFromSheets();
-  }
-  return cached.length > 0 ? cached : DEFAULT_COUPONS;
+  return readCache();
 }
 
 function _save(coupons: Coupon[]): void {
+  recordLocalEdit();
   writeCache(coupons);
   pushToSheets(coupons);
   window.dispatchEvent(new CustomEvent("couponsUpdated"));
@@ -101,11 +114,15 @@ export function addCoupon(coupon: Omit<Coupon, "id">): void {
 }
 
 export function updateCoupon(id: string, updated: Partial<Coupon>): void {
-  _save(readCache().map(c => c.id === id ? { ...c, ...updated } : c));
+  const current = readCache();
+  const next = current.map(c => c.id === id ? { ...c, ...updated } : c);
+  _save(next);
 }
 
 export function removeCoupon(id: string): void {
-  _save(readCache().filter(c => c.id !== id));
+  const current = readCache();
+  const next = current.filter(c => c.id !== id);
+  _save(next);
 }
 
 export function saveCoupons(coupons: Coupon[]): void {
