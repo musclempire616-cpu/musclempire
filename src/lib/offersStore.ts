@@ -32,6 +32,11 @@ function isRecentLocalEdit(): boolean {
   return Date.now() - ts < 15_000; // Skip sheet overwrite for 15s after user edit
 }
 
+function isCacheStale(): boolean {
+  const ts = parseInt(localStorage.getItem(CACHE_TS_KEY) || "0", 10);
+  return Date.now() - ts > CACHE_TTL;
+}
+
 // ── Sheets (background) ───────────────────────────────────────────────────────
 
 export async function pullOffersFromSheets(retry = 1): Promise<Offer[]> {
@@ -86,7 +91,11 @@ function pushToSheets(offers: Offer[]): void {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export function getOffers(): Offer[] {
-  return readCache();
+  const cached = readCache();
+  if (isCacheStale() || localStorage.getItem(CACHE_KEY) === null) {
+    pullOffersFromSheets().catch(() => {});
+  }
+  return cached;
 }
 
 export function getOffersAndSync(): Offer[] {
