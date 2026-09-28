@@ -3,13 +3,17 @@ import { activeOffers } from "@/data/offers";
 import { APPS_SCRIPT_URL } from "@/lib/sheets";
 
 const T = ["ZujXfS4o6t","pRWL2vQmAT","JbEFBaVKCs","1O7UGPqDyk"].join("");
-const CACHE_KEY = "me_offers_v2";
+const CACHE_KEY = "me_offers_v3";
 const CACHE_TS_KEY = "me_offers_ts";
 const LAST_EDIT_KEY = "me_offers_last_edit_ts";
 const CACHE_TTL = 30_000;
 
 function readCache(): Offer[] {
   try {
+    try {
+      localStorage.removeItem("me_offers_v2");
+      localStorage.removeItem("me_offers_v1");
+    } catch {}
     const item = localStorage.getItem(CACHE_KEY);
     if (item === null) return [];
     return JSON.parse(item);

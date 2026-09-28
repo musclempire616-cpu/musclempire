@@ -1,4 +1,5 @@
 import { APPS_SCRIPT_URL } from "@/lib/sheets";
+import { getOffers } from "@/lib/offersStore";
 
 const T = ["ZujXfS4o6t","pRWL2vQmAT","JbEFBaVKCs","1O7UGPqDyk"].join("");
 const CACHE_KEY = "me_coupons_v2";
@@ -160,7 +161,7 @@ export function validateCoupon(code: string, planName: string): { discount: numb
   // If not found in coupon store, check active offers in localStorage as fallback
   if (!coupon) {
     try {
-      const activeOffers = JSON.parse(localStorage.getItem("me_offers_v2") || "[]");
+      const activeOffers = getOffers();
       const matchedOffer = activeOffers.find((o: any) => o.couponCode && o.couponCode.toUpperCase().trim() === cleanCode && o.status !== "expired");
       if (matchedOffer) {
         const discNum = parseInt((matchedOffer.discount || "").replace(/\D/g, ""), 10) || 20;
