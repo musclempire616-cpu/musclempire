@@ -27,10 +27,10 @@ const DEFAULT_COUPONS: Coupon[] = [
 function readCache(): Coupon[] {
   try {
     const item = localStorage.getItem(CACHE_KEY);
-    if (item === null) return DEFAULT_COUPONS;
+    if (item === null) return [];
     return JSON.parse(item);
   } catch {
-    return DEFAULT_COUPONS;
+    return [];
   }
 }
 

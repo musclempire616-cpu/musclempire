@@ -11,10 +11,10 @@ const CACHE_TTL = 30_000;
 function readCache(): Offer[] {
   try {
     const item = localStorage.getItem(CACHE_KEY);
-    if (item === null) return activeOffers;
+    if (item === null) return [];
     return JSON.parse(item);
   } catch {
-    return activeOffers;
+    return [];
   }
 }
 
